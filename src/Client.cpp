@@ -9,8 +9,11 @@
 #include "Command.hpp"
 
 #include "commands/NameCommand.hpp"
+#include "commands/WhisperCommand.hpp"
 
 typedef struct sockaddr SA;
+
+static std::string current_name;
 
 int send_message(int socket, Command& command) {    
     std::size_t written_bytes = 0;
@@ -71,7 +74,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-	std::cout << "Commands available: quit(0), name(1), whisper(2).\n" << "Enter a number:";
+	std::cout << "Commands available: quit(0), name(1), whisper(2).\nEnter a number";
 
 	while (!quit) {
 		FD_ZERO(&m_master);
@@ -87,7 +90,7 @@ int main(int argc, char **argv) {
 		}
 
 		if (FD_ISSET(STDIN_FILENO, &m_master)) {
-			std::string input, name;
+			std::string input, receiver, message;
 			std::getline(std::cin, input);
 
 			if (input == "0") {
@@ -95,13 +98,22 @@ int main(int argc, char **argv) {
 				continue;
 			} else if (input == "1") {
 				std::cout << "Enter your name: ";
-				std::getline(std::cin, name);
+				std::getline(std::cin, current_name);
 
-				NameCommand name_command(name);
+				NameCommand name_command(current_name);
 				send_message(sockfd, name_command);
+			} else if (input == "2") {
+				std::cout << "Enter the receiver: ";
+				std::getline(std::cin, receiver);
+				std::cout << "\n Enter the message: ";
+				std::getline(std::cin, message);
+
+				WhisperCommand whisper_command(current_name, receiver, message);
+				send_message(sockfd, whisper_command);
 			}
 				std::cout << "Commands available: quit(0), name(1), whisper(2).\n";
 				std::cout << "Enter a number: ";
+			
 		}
 
 		if (FD_ISSET(sockfd, &m_master)) {
