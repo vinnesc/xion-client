@@ -10,6 +10,7 @@
 
 #include "commands/NameCommand.hpp"
 #include "commands/WhisperCommand.hpp"
+#include "commands/ListUsersCommand.hpp"
 
 typedef struct sockaddr SA;
 
@@ -74,7 +75,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-	std::cout << "Commands available: quit(0), name(1), whisper(2).\nEnter a number";
+	std::cout << "Commands available: quit(0), name(1), whisper(2), list_users(3).\nEnter a number";
 
 	while (!quit) {
 		FD_ZERO(&m_master);
@@ -110,9 +111,12 @@ int main(int argc, char **argv) {
 
 				WhisperCommand whisper_command(current_name, receiver, message);
 				send_message(sockfd, whisper_command);
+			} else if (input == "3") {
+				ListUsersCommand list_users_command;
+				send_message(sockfd, list_users_command);
 			}
-				std::cout << "Commands available: quit(0), name(1), whisper(2).\n";
-				std::cout << "Enter a number: ";
+			std::cout << "Commands available: quit(0), name(1), whisper(2), list_users(3).\nEnter a number";
+
 			
 		}
 
@@ -127,6 +131,18 @@ int main(int argc, char **argv) {
 				continue;
 			}
 
+			auto response = Command::deserialize(buffer);
+			if (response->getCommandType() == Commands::LIST_USERS) {
+				auto list_users = dynamic_cast<ListUsersCommand*>(response.get());
+				auto users = list_users->getUsers();
+				auto i = 1;
+				
+				std::cout << "Users connected: \n";
+				for (auto& user : users) {
+					std::cout << i << ".- " << user << "\n";
+				}
+			}
+			
 			std::cout << "Message recieved: " << buffer << "\n";
 		}
 

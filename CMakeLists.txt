@@ -11,6 +11,7 @@ set(CLIENT_SOURCES
     src/commands/NameCommand.cpp
     src/commands/QuitCommand.cpp
     src/commands/WhisperCommand.cpp
+    src/commands/ListUsersCommand.cpp
 )
 
 add_executable(client ${CLIENT_SOURCES})

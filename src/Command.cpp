@@ -4,6 +4,7 @@
 #include "commands/NameCommand.hpp"
 #include "commands/QuitCommand.hpp"
 #include "commands/WhisperCommand.hpp"
+#include "commands/ListUsersCommand.hpp"
 
 Command::Command(Commands command) 
 : command(command)
@@ -19,7 +20,7 @@ Message Command::serialize() {
     return j.dump();
 }
 
-Command* Command::deserialize(Message message) {
+std::unique_ptr<Command> Command::deserialize(Message message) {
     auto parsed_message = json::parse(message);
     if (parsed_message["type"] != "command") {
         throw "Unexpected message";
@@ -34,6 +35,9 @@ Command* Command::deserialize(Message message) {
     }
     if (parsed_message["command"] == Commands::WHISPER) {
         return WhisperCommand::deserialize(message);
+    }
+    if (parsed_message["command"] == Commands::LIST_USERS) {
+        return ListUsersCommand::deserialize(message);
     }
 
     throw "Unknown command";
