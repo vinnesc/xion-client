@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <ctime>
 
 #include "Command.hpp"
 
@@ -12,27 +13,22 @@
 #include "commands/WhisperCommand.hpp"
 #include "commands/ListUsersCommand.hpp"
 
+#define DEBUG 0
+
 typedef struct sockaddr SA;
 
 static std::string current_name;
 
 int send_message(int socket, Command& command) {    
-    std::size_t written_bytes = 0;
-	std::size_t error = 0;
 	Message message = command.serialize();
 	Length length = message.length();
 
-	std::cout << "Message about to be sent:\n";
+#if DEBUG
+	std::cout << "--------------Message about to be sent--------------\n";
 	std::cout << message;
-	while ((error = write(socket, message.c_str(), length - written_bytes)) < length) {
-		if (error == -1) {
-			return error;
-		}
-
-		written_bytes += error;
-	}
-    
-	std::cout << "Message sent\n";
+	std::cout << "\n----------------------------------------------------\n";
+#endif
+	send(socket, message.c_str(), message.length(), 0);
 
     return 0;
 }
@@ -75,8 +71,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-	std::cout << "Commands available: quit(0), name(1), whisper(2), list_users(3).\nEnter a number";
-
+	std::cout << "Commands available: quit(0), name(1), whisper(2), list_users(3).\nEnter a number: " << std::flush;
 	while (!quit) {
 		FD_ZERO(&m_master);
 
@@ -106,7 +101,7 @@ int main(int argc, char **argv) {
 			} else if (input == "2") {
 				std::cout << "Enter the receiver: ";
 				std::getline(std::cin, receiver);
-				std::cout << "\n Enter the message: ";
+				std::cout << "Enter the message: ";
 				std::getline(std::cin, message);
 
 				WhisperCommand whisper_command(current_name, receiver, message);
@@ -115,9 +110,6 @@ int main(int argc, char **argv) {
 				ListUsersCommand list_users_command;
 				send_message(sockfd, list_users_command);
 			}
-			std::cout << "Commands available: quit(0), name(1), whisper(2), list_users(3).\nEnter a number";
-
-			
 		}
 
 		if (FD_ISSET(sockfd, &m_master)) {
@@ -137,14 +129,24 @@ int main(int argc, char **argv) {
 				auto users = list_users->getUsers();
 				auto i = 1;
 				
-				std::cout << "Users connected: \n";
+				std::cout << "\n--------------Users connected--------------\n" << std::flush;
 				for (auto& user : users) {
 					std::cout << i << ".- " << user << "\n";
+					i++;
 				}
+			} else if (response->getCommandType() == Commands::WHISPER) {
+				auto whisper = dynamic_cast<WhisperCommand*>(response.get());
+				auto t = time(0);
+				char buffer[10];
+				strftime(buffer, 10, "%H:%M", localtime(&t));
+				std::cout << "\n" << buffer << ">" << whisper->getSender() << ": " << whisper->getMessage() << "\n" << std::flush;
 			}
 			
-			std::cout << "Message recieved: " << buffer << "\n";
+			#if DEBUG
+			std::cout << "Message recieved: " << buffer << "\n" << std::flush;
+			#endif
 		}
+		std::cout << "Commands available: quit(0), name(1), whisper(2), list_users(3).\nEnter a number: " << std::flush;
 
 	}
 

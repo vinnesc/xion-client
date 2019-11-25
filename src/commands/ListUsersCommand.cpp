@@ -15,7 +15,7 @@ Message ListUsersCommand::serialize() {
 
     j["type"] = "command";
     j["command"] = Commands::LIST_USERS;
-    j["response"] = true;
+    j["response"] = this->response;
     j["users"] = this->users_names;
     return j.dump();
 }
